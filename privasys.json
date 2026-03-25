@@ -1,0 +1,19 @@
+{
+    "tools": [
+        {
+            "name": "browse",
+            "description": "Fetch a web page using the headless browser.",
+            "endpoint": "/browse",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL of the web page to fetch"
+                    }
+                },
+                "required": ["url"]
+            }
+        }
+    ]
+}
