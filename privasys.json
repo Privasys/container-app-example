@@ -2,14 +2,19 @@
     "tools": [
         {
             "name": "browse",
-            "description": "Fetch a web page using the headless browser.",
+            "description": "Fetch a web page using the Lightpanda headless browser and return its content as markdown or HTML.",
             "endpoint": "/browse",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "url": {
                         "type": "string",
-                        "description": "The URL of the web page to fetch"
+                        "description": "The URL of the web page to fetch (must start with http:// or https://)"
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["markdown", "html"],
+                        "description": "Output format for the page content (default: markdown)"
                     }
                 },
                 "required": ["url"]
