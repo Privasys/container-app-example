@@ -1,29 +1,31 @@
 {
+    "config_api": {
+        "method": "POST",
+        "path": "/configure"
+    },
     "tools": [
         {
-            "name": "browse",
-            "description": "Fetch a web page using the Lightpanda headless browser and return its content as markdown or HTML.",
-            "endpoint": "/browse",
+            "name": "configure",
+            "description": "Inject the API key the app needs before it can serve traffic. Must be called once per container restart; the runtime keeps every other endpoint at HTTP 503 until this succeeds.",
+            "endpoint": "/configure",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "url": {
+                    "api_key": {
                         "type": "string",
-                        "description": "The URL of the web page to fetch (must start with http:// or https://)"
-                    },
-                    "format": {
-                        "type": "string",
-                        "enum": [
-                            "markdown",
-                            "html"
-                        ],
-                        "description": "Output format for the page content (default: markdown)",
-                        "default": "markdown"
+                        "description": "Secret API key. Stored in the per-app sealed volume; SHA-256 of the value is committed to the per-container RA-TLS leaf at OID 1.3.6.1.4.1.65230.3.5.1."
                     }
                 },
-                "required": [
-                    "url"
-                ]
+                "required": ["api_key"]
+            }
+        },
+        {
+            "name": "protected",
+            "description": "Returns 200 with the configured API key length once the app has been configured; HTTP 503 otherwise.",
+            "endpoint": "/protected",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
             }
         }
     ]
