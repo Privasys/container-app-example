@@ -1,0 +1,59 @@
+# Copyright (c) Privasys. All rights reserved.
+# Licensed under the GNU Affero General Public License v3.0.
+#
+# Build & push the container-app-example image to GHCR. Each push of a
+# `v*` tag produces ghcr.io/privasys/container-app-example:<tag> and a
+# :<tag>-<sha> immutable tag. Used to exercise the enclave-upgrade flow:
+# deploy one tag, then a second (a code change → a different image digest)
+# to test the vault key gate + app-owner / data-owner promotion.
+
+name: Build & Push container-app-example
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/privasys/container-app-example
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          REF="${GITHUB_REF#refs/tags/}"
+          [ "$GITHUB_REF" = "${GITHUB_REF#refs/tags/}" ] && REF="manual-$(git rev-parse --short HEAD)"
+          echo "tag=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # linux/amd64 only — the TDX enclave is amd64; a multi-arch index
+          # would change the digest the platform pins at OID 3.2.
+          platforms: linux/amd64
+          provenance: false
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}-${{ github.sha }}
