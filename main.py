@@ -68,6 +68,10 @@ _SAFE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 _MANAGER_HOST = "127.0.0.1"
 _MANAGER_PORT = 9443
 
+# Bumped per release so the deployed measurement (image digest at OID 3.2)
+# changes and the two versions are distinguishable at runtime via /version.
+APP_VERSION = "1.0.0"
+
 _NAME = os.environ.get("PRIVASYS_CONTAINER_NAME", "")
 _TOKEN = os.environ.get("PRIVASYS_CONTAINER_TOKEN", "")
 
@@ -156,7 +160,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _is_frozen_for(self, path: str) -> bool:
         # Health check is always available so the manager's readiness
         # probe can see the container is up even before configuration.
-        if path == "/health":
+        # /version is open too so the deployed measurement can be
+        # identified before the app is configured.
+        if path in ("/health", "/version"):
             return False
         with _CONFIG_LOCK:
             return not _CONFIGURED
@@ -174,6 +180,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if path == "/health":
             self._json(200, {"status": "healthy"})
+        elif path == "/version":
+            self._json(200, {"version": APP_VERSION})
         elif path == "/protected":
             try:
                 key = _KEY_PATH.read_text()
@@ -182,7 +190,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             self._json(200, {"status": "ok", "api_key_length": len(key)})
         elif path == "/":
-            self._json(200, {"status": "ok", "name": _NAME})
+            self._json(200, {"status": "ok", "name": _NAME, "version": APP_VERSION})
         elif path.startswith("/store/"):
             self._get_store(path[len("/store/"):])
         elif path == "/store":
