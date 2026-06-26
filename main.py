@@ -33,6 +33,11 @@ from urllib.parse import urlparse
 
 APP_VERSION = "1.0.0"
 
+# The platform runs containers on the host network and assigns each one a
+# unique port, injected as $PORT. The app MUST listen on it (the manager's
+# health probe hits localhost:$PORT/health). Default 8080 for local runs.
+_PORT = int(os.environ.get("PORT", "8080"))
+
 # Injected by the launcher; handy for identifying the instance.
 _NAME = os.environ.get("PRIVASYS_CONTAINER_NAME", "")
 
@@ -124,6 +129,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = http.server.HTTPServer(("0.0.0.0", 8080), Handler)
-    print(f"container-app-example listening on :8080 (name={_NAME or '<unset>'})")
+    server = http.server.HTTPServer(("0.0.0.0", _PORT), Handler)
+    print(f"container-app-example listening on :{_PORT} (name={_NAME or '<unset>'})")
     server.serve_forever()
