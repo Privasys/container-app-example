@@ -1,31 +1,37 @@
 {
-    "config_api": {
-        "method": "POST",
-        "path": "/configure"
-    },
     "tools": [
         {
-            "name": "configure",
-            "description": "Inject the API key the app needs before it can serve traffic. Must be called once per container restart; the runtime keeps every other endpoint at HTTP 503 until this succeeds.",
-            "endpoint": "/configure",
+            "name": "store",
+            "description": "Write a value to the app's per-app sealed volume (/data). Survives restarts and upgrades; the host never sees the encryption key or the plaintext.",
+            "endpoint": "/store",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "api_key": {
+                    "key": {
                         "type": "string",
-                        "description": "Secret API key. Stored in the per-app sealed volume; SHA-256 of the value is committed to the per-container RA-TLS leaf at OID 1.3.6.1.4.1.65230.3.5.1."
+                        "description": "Key (alphanumerics, dot, dash, underscore; max 128 chars)."
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "Value to store."
                     }
                 },
-                "required": ["api_key"]
+                "required": ["key", "value"]
             }
         },
         {
-            "name": "protected",
-            "description": "Returns 200 with the configured API key length once the app has been configured; HTTP 503 otherwise.",
-            "endpoint": "/protected",
+            "name": "fetch",
+            "description": "Read a value previously written with `store` from the per-app sealed volume.",
+            "endpoint": "/fetch",
             "inputSchema": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Key to read."
+                    }
+                },
+                "required": ["key"]
             }
         }
     ]
