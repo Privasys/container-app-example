@@ -38,6 +38,30 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Build-contract gate: the platform runs containers on the host network
+      # and injects a unique $PORT per app; the app MUST listen on it (a
+      # hardcoded port collides with co-located apps and fails its health
+      # probe). Build + run the image with an injected PORT and require it to
+      # answer /health there — so an image that ignores $PORT can never ship.
+      - name: Smoke test — must listen on injected $PORT
+        run: |
+          set -euo pipefail
+          docker build -t cae-smoke .
+          PORT=18080
+          docker run -d --name cae-smoke -e PORT=$PORT -p $PORT:$PORT cae-smoke
+          ok=0
+          for _ in $(seq 1 15); do
+            if curl -fs "http://localhost:$PORT/health" | grep -q '"status"'; then ok=1; break; fi
+            sleep 1
+          done
+          echo "--- container logs ---"; docker logs cae-smoke || true
+          docker rm -f cae-smoke >/dev/null 2>&1 || true
+          if [ "$ok" != "1" ]; then
+            echo "::error::Image did not serve /health on the injected PORT=$PORT. The app MUST listen on \$PORT (the host-net port the platform assigns), not a hardcoded port."
+            exit 1
+          fi
+          echo "✓ listens on injected \$PORT=$PORT"
+
       - name: Resolve tag
         id: tag
         run: |
