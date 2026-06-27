@@ -31,7 +31,7 @@ import http.server
 from pathlib import Path
 from urllib.parse import urlparse
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 # The platform runs containers on the host network and assigns each one a
 # unique port, injected as $PORT. The app MUST listen on it (the manager's
