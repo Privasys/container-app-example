@@ -34,9 +34,13 @@ from urllib.parse import urlparse
 APP_VERSION = "1.0.1"
 
 # The platform runs containers on the host network and assigns each one a
-# unique port, injected as $PORT. The app MUST listen on it (the manager's
-# health probe hits localhost:$PORT/health). Default 8080 for local runs.
-_PORT = int(os.environ.get("PORT", "8080"))
+# unique port, injected as $PORT. The app listens on it (the manager's health
+# probe hits localhost:$PORT/health). $PORT is required — there is no hard-coded
+# fallback; for a local run, set it explicitly (e.g. PORT=8000).
+_port = os.environ.get("PORT")
+if not _port:
+    raise SystemExit("PORT environment variable is required")
+_PORT = int(_port)
 
 # Injected by the launcher; handy for identifying the instance.
 _NAME = os.environ.get("PRIVASYS_CONTAINER_NAME", "")
